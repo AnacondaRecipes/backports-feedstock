@@ -2,16 +2,22 @@
 {% set version = "1.1" %}
 
 package:
-  name: "{{ name }}"
-  version: "{{ version }}"
+  name: {{ name }}
+  version: {{ version }}
 
 source:
   url: https://github.com/brandon-rhodes/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
   sha256: 64fbda275c95e04f09ca5c11e33527866b1b1c8f16bb0eea2f504f2d3b60195c
 
 build:
-  number: 0
+  number: 1
   noarch: python
+  script:
+    - set -ex
+    - cd {{ SP_DIR if SP_DIR is defined else '' }}
+    - mkdir -p backports
+    - cp {{ RECIPE_DIR }}/init.py backports/__init__.py
+    - {{ PYTHON }} -c "import backports"
 
 requirements:
   host:
@@ -25,8 +31,31 @@ test:
     - backports
   requires:
     - pip
+    - backports.functools_lru_cache
+    - backports.lzma                      # [py<311]
+    - backports.os                        # [py<312]
+    - backports.shutil_get_terminal_size
+    - backports.shutil_which              # [py<312]
+    - backports.tempfile
+    - backports.weakref                   # [py<312]
+    - backports.zoneinfo
   commands:
     - pip check
+    - unset PIP_NO_INDEX                       # [unix]
+    - set "PIP_NO_INDEX="                      # [win]
+    - python -m pip install --target alt-site backports.tarfile
+    - export PYTHONPATH="${SP_DIR}:alt-site"   # [unix]
+    - set "PYTHONPATH=%SP_DIR%;alt-site"       # [win]
+    - python -c "import backports.tarfile"
+    # Check all backports packages available in the main channel
+    - python -c "import backports.functools_lru_cache"
+    - python -c "import backports.lzma"         # [py<311]
+    - python -c "import backports.os"           # [py<312]
+    - python -c "import backports.shutil_get_terminal_size"
+    - python -c "import backports.shutil_which"  # [py<312]
+    - python -c "import backports.tempfile"
+    - python -c "import backports.weakref"       # [py<312]
+    - python -c "import backports.zoneinfo"
 
 about:
   home: https://github.com/brandon-rhodes/backports
