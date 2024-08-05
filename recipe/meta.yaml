@@ -17,6 +17,9 @@ build:
     - echo on  # [win]
     - cd {{ SP_DIR }}
     - mkdir -p backports
+    # The reason we need init.py copied as __init__.py can be found here:
+    # https://github.com/conda-forge/setuptools-feedstock/pull/352#issuecomment-2242498696, and
+    # https://github.com/conda-forge/setuptools-feedstock/pull/352#issuecomment-2242541685
     - cp {{ RECIPE_DIR }}/init.py backports/__init__.py
     - {{ PYTHON }} -c "import backports"
 
