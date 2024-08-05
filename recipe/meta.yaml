@@ -51,7 +51,7 @@ test:
     - unset PIP_NO_INDEX                        # [unix]
     - set "PIP_NO_INDEX="                       # [win]
     - python -m pip install --target alt-site backports.tarfile
-    # The reason you need $SP_DIR in the PYTHONPATH is to make sure it appears ahead of alt-site.
+    # The reason you need $SP_DIR in the PYTHONPATH is to make sure it appears ahead of alt-site, the value of --target in the above install command.
     - export PYTHONPATH="${SP_DIR}:alt-site"    # [unix]
     - set "PYTHONPATH=%SP_DIR%;alt-site"        # [win]
     - python -c "import backports.tarfile"
