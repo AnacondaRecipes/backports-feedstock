@@ -2,16 +2,26 @@
 {% set version = "1.1" %}
 
 package:
-  name: "{{ name }}"
-  version: "{{ version }}"
+  name: {{ name }}
+  version: {{ version }}
 
 source:
   url: https://github.com/brandon-rhodes/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
   sha256: 64fbda275c95e04f09ca5c11e33527866b1b1c8f16bb0eea2f504f2d3b60195c
 
 build:
-  number: 0
+  number: 1
   noarch: python
+  script:
+    - set -ex  # [unix]
+    - echo on  # [win]
+    - cd {{ SP_DIR }}
+    - mkdir -p backports
+    # The reason we need init.py copied as __init__.py can be found here:
+    # https://github.com/conda-forge/setuptools-feedstock/pull/352#issuecomment-2242498696, and
+    # https://github.com/conda-forge/setuptools-feedstock/pull/352#issuecomment-2242541685
+    - cp {{ RECIPE_DIR }}/init.py backports/__init__.py
+    - {{ PYTHON }} -c "import backports"
 
 requirements:
   host:
@@ -25,8 +35,35 @@ test:
     - backports
   requires:
     - pip
+    - backports.functools_lru_cache
+    - backports.lzma                      # [py<311]
+    - backports.os                        # [py<312]
+    - backports.shutil_get_terminal_size
+    - backports.shutil_which              # [py<312]
+    - backports.tempfile
+    - backports.weakref                   # [py<312]
+    - backports.zoneinfo
   commands:
     - pip check
+    - echo on                                   # [win]
+    # The PIP_NO_INDEX environment variable ensures that pip does not try and pull down packages from PyPi.
+    # conda-build >=3.17 sets PIP_NO_INDEX=True, but we actually want to go download these packages in this case.
+    - unset PIP_NO_INDEX                        # [unix]
+    - set "PIP_NO_INDEX="                       # [win]
+    - python -m pip install --target alt-site backports.tarfile
+    # The reason you need $SP_DIR in the PYTHONPATH is to make sure it appears ahead of alt-site, the value of --target in the above install command.
+    - export PYTHONPATH="${SP_DIR}:alt-site"    # [unix]
+    - set "PYTHONPATH=%SP_DIR%;alt-site"        # [win]
+    - python -c "import backports.tarfile"
+    # Check all backports packages available in the main channel
+    - python -c "import backports.functools_lru_cache"
+    - python -c "import backports.lzma"         # [py<311]
+    - python -c "import backports.os"           # [py<312]
+    - python -c "import backports.shutil_get_terminal_size"
+    - python -c "import backports.shutil_which"  # [py<312]
+    - python -c "import backports.tempfile"
+    - python -c "import backports.weakref"       # [py<312]
+    - python -c "import backports.zoneinfo"
 
 about:
   home: https://github.com/brandon-rhodes/backports
